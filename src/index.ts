@@ -7,6 +7,8 @@ export const r2gSmokeTest = function () {
   return true;
 };
 
+export type EVCb<T> = (err: any, val?: T) => void;
+
 /*
 
  bad library design:
