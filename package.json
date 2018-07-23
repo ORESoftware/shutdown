@@ -4,7 +4,7 @@
   "description": "Semver-oriented TypeScript library skeleton.",
   "main": "dist/index.js",
   "bin": {
-    "example": "cli/example.sh"
+    "ores_shutdown": "cli/ores_shutdown.js"
   },
   "types": "dist/index.d.ts",
   "typings": "dist/index.d.ts",

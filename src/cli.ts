@@ -19,22 +19,38 @@ const status = {
 
 q.drain = q.error = (err?: any) => {
   
-  if(err){
+  if (err) {
     log.error(err);
   }
-
-  if(status.doneSearching === true){
+  
+  if (status.doneSearching === true) {
     log.info('All done.');
     process.exit(0);
   }
   
+  log.info('Queue drained but we are still searching.');
 };
 
+const funcs: Array<(p:string) => boolean> = [
+  v => {
+    return String(v).startsWith('.');
+  },
+  v => {
+    return String(v).endsWith('node_modules');
+  }
+];
 
-const makeTask = function (p: string) {
+const matches = function (v: string) {
+  return !funcs.some(fn => fn(v));
+};
+
+const makeTask = function (p: string): Task {
   
-  return <Task>(cb => {
-  
+  return cb => {
+    
+    log.info('process path:', p);
+    return setTimeout(cb, 0);
+    
     const k = cp.spawn('bash');
     
     k.stdin.end([
@@ -45,53 +61,48 @@ const makeTask = function (p: string) {
       `git push`
     ]
       .join(' && '));
-  
+    
     k.stderr.pipe(process.stderr);
     
     k.once('exit', code => {
       cb(null, {code, path: p});
     });
     
-  });
-
+  };
+  
 };
 
 
-
-
-(function searchDir(dir: string, cb: EVCb<any>){
-
+(function searchDir(dir: string, cb: EVCb<any>) {
+  
   
   fs.readdir(dir, (err, items) => {
     
-    if(err){
-     log.warn(err.message);
+    if (err) {
+      log.warn(err.message);
       return cb(null);
     }
     
-    const filtered = items.filter(v => {
-        return !String(v).endsWith('node_modules');
-    });
+    const filtered = items.filter(matches);
     
     async.eachLimit(filtered, 3, (item, cb) => {
-    
+      
       const full = path.resolve(dir + '/' + item);
-    
-      fs.lstat(full, (err,stats) => {
-  
-  
-        if(err){
+      
+      fs.lstat(full, (err, stats) => {
+        
+        if (err) {
           log.warn(err.message);
           return cb(null);
         }
-  
         
-        if(stats.isDirectory()){
+        
+        if (stats.isDirectory()) {
           return searchDir(full, cb);
         }
         
         
-        if(stats.isFile()) {
+        if (stats.isFile()) {
           if (path.basename(full) === 'package.json') {
             q.push(makeTask(dir));
           }
@@ -100,22 +111,26 @@ const makeTask = function (p: string) {
         cb(null);
         
       });
-    
+      
     }, cb);
     
     
   });
-
+  
   
 })(root, (err, results) => {
   
   status.doneSearching = true;
   
-  if(err){
+  if (err) {
     throw err;
   }
   
-  log.info('Done searching.')
+  if(q.idle() && q.empty()){
+    log.info('Queue is empty, shutting down.');
+    process.exit(0);
+  }
   
+  log.info('Done searching foo.');
   
 });
