@@ -30,7 +30,8 @@
   "homepage": "https://github.com/ORESoftware/typescript-library-skeleton#readme",
   "dependencies": {
     "async": "^2.6.1",
-    "chalk": "^2.4.1"
+    "chalk": "^2.4.1",
+    "prepend-transform": "0.0.1016"
   },
   "devDependencies": {
     "@types/async": "^2.0.49",
